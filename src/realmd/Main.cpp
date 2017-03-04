@@ -31,6 +31,7 @@
 #include "SystemConfig.h"
 #include "revision.h"
 #include "Util.h"
+#include "migrations_list.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 
@@ -391,6 +392,13 @@ bool StartDB()
     if(!LoginDatabase.Initialize(dbstring.c_str()))
     {
         sLog.outError("Cannot connect to database");
+        return false;
+    }
+
+    if (!LoginDatabase.CheckRequiredMigrations(MIGRATIONS_LOGON))
+    {
+        ///- Wait for already started DB delay threads to end
+        LoginDatabase.HaltDelayThread();
         return false;
     }
 

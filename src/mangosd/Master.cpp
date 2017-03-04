@@ -47,6 +47,7 @@
 #include "MaNGOSsoap.h"
 #include "MassMailMgr.h"
 #include "DBCStores.h"
+#include "migrations_list.h"
 
 #include <ace/OS_NS_signal.h>
 #include <ace/TP_Reactor.h>
@@ -528,7 +529,7 @@ int Master::Run()
     return World::GetExitCode();
 }
 
-bool StartDB(std::string name, DatabaseType& database)
+bool StartDB(std::string name, DatabaseType& database, const char **migrations)
 {
     ///- Get database info from configuration file
     std::string dbstring = sConfig.GetStringDefault((name + "Database.Info").c_str(), "");
@@ -548,6 +549,9 @@ bool StartDB(std::string name, DatabaseType& database)
         return false;
     }
 
+    if (!database.CheckRequiredMigrations(migrations))
+        return false;
+
     return true;
 }
 /// Initialize connection to the databases
@@ -558,6 +562,18 @@ bool Master::_StartDB()
     if(!realmID)
     {
         sLog.outError("Realm ID not defined in configuration file");
+        return false;
+    }
+
+    if (!StartDB("World", WorldDatabase, MIGRATIONS_WORLD) ||
+        !StartDB("Character", CharacterDatabase, MIGRATIONS_CHARACTERS) ||
+        !StartDB("Login", LoginDatabase, MIGRATIONS_LOGON) ||
+        !StartDB("Logs", LogsDatabase, MIGRATIONS_LOGS))
+    {
+        WorldDatabase.HaltDelayThread();
+        CharacterDatabase.HaltDelayThread();
+        LoginDatabase.HaltDelayThread();
+        LogsDatabase.HaltDelayThread();
         return false;
     }
 
