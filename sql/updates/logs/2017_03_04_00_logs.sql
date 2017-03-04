@@ -1,5 +1,3 @@
-INSERT INTO `migrations` VALUES ('20170208044858'); 
-
 DROP TABLE IF EXISTS `logs_spamdetects`;
 DROP TABLE IF EXISTS `logs_spamdetect`;
 CREATE TABLE `logs_spamdetect` (
